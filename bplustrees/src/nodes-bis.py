@@ -14,42 +14,80 @@ class BPlusTree:
         self.node = Node()
 
     def insert(self, key: List):
-        print(f"Inserting {key}...")
-        self.node.keys.append(key)
-        self.node.keys.sort()
+        leaf = self._find_leaf(self.node, key)
+        leaf.keys.append(key)
+        leaf.keys.sort()
 
-        if len(self.node.keys) >= self.order:
+        if len(self.node.keys) > self.order:
             self.node = self.split_node(self.node)
+        elif len(leaf.keys) > self.order:
+            parent = self._find_parent(self.node, leaf)
+            self.split_node(leaf, parent)
 
-    def split_node(self, node: Node) -> Node:
-        print("splitting node...")
+    def _find_leaf(self, node: Node, key: List) -> Node:
+        # Base case: if a node is a leaf, return it
+        if node.is_leaf:
+            return node
+
+        # Compare keys to find the correct child
+        for i, nodekey in enumerate(node.keys):
+            if key < nodekey:
+                return self._find_leaf(node.children[i], key)
+
+        # If the key is larger that all previous keys, go to last child
+        return self._find_leaf(node.children[-1], key)
+
+    def split_node(self, node: Node, parent: Node = None) -> Node:
+        print(f"splitting node with keys {node.keys}")
 
         midpoint = len(node.keys) // 2
         middlekey = node.keys[midpoint]
 
         left_node = Node(keys=node.keys[:midpoint])
-        right_node = Node(keys=node.keys[midpoint+1:])
+        right_node = Node(keys=node.keys[midpoint + 1 :])
 
-        if node == self.node: # node to split is the root
-            new_root = Node(keys=[middlekey], children=[left_node, right_node], is_leaf=False)
+        if node == self.node:  # node to split is the root
+            new_root = Node(
+                keys=[middlekey], children=[left_node, right_node], is_leaf=False
+            )
             return new_root
         else:
-            pass
+            parent.keys.append(middlekey)
+            parent.keys.sort()
 
-        print("Done...")
+            left_index = parent.children.index(node)
+            parent.children[left_index] = left_node
+            parent.children.insert(left_index + 1, right_node)
 
+            if len(parent.keys) > self.order:
+                grandparent = self._find_parent(self.node, parent)
+                self.split_node(node=parent, parent=grandparent)
         return node
+
+    def _find_parent(self, current: Node, target: Node) -> Node:
+        if (current.is_leaf) or (target in current.children):
+            return current
+        for child in current.children:
+            parent = self._find_parent(child, target)
+            if parent:
+                return parent
+        return None
+
+    def print_tree(self, node: Node = None, level: int = 0):
+        if node is None:
+            node = self.node
+        print(" " * (level * 4) + f"Level {level} | Keys: {node.keys}")
+        for child in node.children:
+            self.print_tree(child, level + 1)
 
 
 def main() -> None:
     tree = BPlusTree(3)
-    tree.insert([5])
-    tree.insert([10])
-    tree.insert([20])
+    for key in [5, 10, 20, 21, 22, 6, 23, 7, 1, 2, 3, 4, 6]:
+        tree.insert([key])
 
-    print("Final tree:")
-    print(tree.node.keys)
-    print([childrennode.keys for childrennode in tree.node.children])
+    print("Final tree structure:")
+    tree.print_tree()
 
 
 if __name__ == "__main__":
