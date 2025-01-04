@@ -18,9 +18,7 @@ class BPlusTree:
         leaf.keys.append(key)
         leaf.keys.sort()
 
-        if len(self.node.keys) > self.order:
-            self.node = self.split_node(self.node)
-        elif len(leaf.keys) > self.order:
+        if len(leaf.keys) > self.order:
             parent = self._find_parent(self.node, leaf)
             self.split_node(leaf, parent)
 
@@ -43,14 +41,19 @@ class BPlusTree:
         midpoint = len(node.keys) // 2
         middlekey = node.keys[midpoint]
 
-        left_node = Node(keys=node.keys[:midpoint])
-        right_node = Node(keys=node.keys[midpoint + 1 :])
+        left_node = Node(keys=node.keys[:midpoint], is_leaf=node.is_leaf)
+        right_node = Node(keys=node.keys[midpoint + 1 :], is_leaf=node.is_leaf)
+
+        if not node.is_leaf:
+            # Assign children to the new nodes if node is not a leaf
+            left_node.children = node.children[:midpoint + 1]
+            right_node.children = node.children[midpoint + 1:]
 
         if node == self.node:  # node to split is the root
-            new_root = Node(
+            self.node = Node(
                 keys=[middlekey], children=[left_node, right_node], is_leaf=False
             )
-            return new_root
+            return self.node
         else:
             parent.keys.append(middlekey)
             parent.keys.sort()
@@ -83,7 +86,7 @@ class BPlusTree:
 
 def main() -> None:
     tree = BPlusTree(3)
-    for key in [5, 10, 20, 21, 22, 6, 23, 7, 1, 2, 3, 4, 6]:
+    for key in [5, 10, 20, 21, 22, 6, 23, 7, 24, 25, 26, 27]:
         tree.insert([key])
 
     print("Final tree structure:")
