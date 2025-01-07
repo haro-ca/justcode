@@ -14,6 +14,7 @@ class BPlusTree:
         self.node = Node()
 
     def insert(self, key: List):
+        print(f'inserting key {key}')
         leaf = self._find_leaf(self.node, key)
         leaf.keys.append(key)
         leaf.keys.sort()
